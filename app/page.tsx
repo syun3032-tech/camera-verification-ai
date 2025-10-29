@@ -9,18 +9,25 @@ interface Message {
 }
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "こんにちは！議事録作成AIです。\n\n音声ファイルをアップロードしていただければ、自動で文字起こしと議事録の作成を行います。\n\nどのようなご用件でしょうか？",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // クライアント側でのみ初期メッセージを設定（Hydrationエラー回避）
+  useEffect(() => {
+    setMounted(true);
+    setMessages([
+      {
+        role: "assistant",
+        content: "こんにちは！議事録作成AIです。\n\n音声ファイルをアップロードしていただければ、自動で文字起こしと議事録の作成を行います。\n\nどのようなご用件でしょうか？",
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -29,6 +36,23 @@ export default function Home() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // マウント前は何も表示しない（Hydrationエラー回避）
+  if (!mounted) {
+    return (
+      <main className="flex h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="w-64 bg-gray-900 text-white p-4 flex flex-col">
+          <div className="mb-8">
+            <h1 className="text-xl font-bold mb-2">🎤 議事録AI</h1>
+            <p className="text-xs text-gray-400">Powered by Claude</p>
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-500">読み込み中...</div>
+        </div>
+      </main>
+    );
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
