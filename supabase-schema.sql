@@ -28,3 +28,4 @@ CREATE POLICY "Enable insert access for all users" ON meeting_minutes
 
 
 
+
