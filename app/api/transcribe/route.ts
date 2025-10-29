@@ -8,6 +8,7 @@ import {
 } from "@/lib/api-auth";
 
 // ボディサイズ制限を設定（50MB）
+// Vercel環境ではvercel.jsonで maxBodySize: "50mb" を設定
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 

@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from "react";
 interface Message {
   role: "user" | "assistant";
   content: string;
-  timestamp: Date;
+  timestamp: string; // ISO文字列に変更してハイドレーションエラーを回避
 }
 
 export default function Home() {
@@ -24,7 +24,7 @@ export default function Home() {
       {
         role: "assistant",
         content: "こんにちは！議事録作成AIです。\n\n音声ファイルをアップロードしていただければ、自動で文字起こしと議事録の作成を行います。\n\nどのようなご用件でしょうか？",
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       },
     ]);
   }, []);
@@ -63,7 +63,7 @@ export default function Home() {
       const userMessage: Message = {
         role: "user",
         content: `📎 音声ファイル: ${selectedFile.name}`,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, userMessage]);
       
@@ -80,7 +80,7 @@ export default function Home() {
       const processingMessage: Message = {
         role: "assistant",
         content: "音声ファイルを処理しています...\n\n⏳ 文字起こしを実行中",
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, processingMessage]);
 
@@ -104,7 +104,7 @@ export default function Home() {
       const transcriptMessage: Message = {
         role: "assistant",
         content: `✅ 文字起こしが完了しました！\n\n---\n\n${transcript}\n\n---\n\n⏳ 議事録を作成中...`,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev.slice(0, -1), transcriptMessage]);
 
@@ -126,7 +126,7 @@ export default function Home() {
       const finalMessage: Message = {
         role: "assistant",
         content: `✅ 議事録が完成しました！\n\n${summary}\n\n---\n\n他に何かお手伝いできることはありますか？`,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev.slice(0, -1), finalMessage]);
 
@@ -135,7 +135,7 @@ export default function Home() {
       const errorMessage: Message = {
         role: "assistant",
         content: `❌ エラーが発生しました: ${err instanceof Error ? err.message : "不明なエラー"}\n\nもう一度お試しください。`,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev.slice(0, -1), errorMessage]);
     } finally {
@@ -151,7 +151,7 @@ export default function Home() {
       const userMessage: Message = {
         role: "user",
         content: input,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, userMessage]);
       setInput("");
@@ -162,7 +162,7 @@ export default function Home() {
         const response: Message = {
           role: "assistant",
           content: "音声ファイルをアップロードしてください。📎ボタンから選択できます。\n\n対応フォーマット: MP3, WAV, M4A, MP4など",
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, response]);
         setLoading(false);
@@ -244,7 +244,7 @@ export default function Home() {
                         : "text-gray-400"
                     }`}
                   >
-                    {message.timestamp.toLocaleTimeString("ja-JP", {
+                    {new Date(message.timestamp).toLocaleTimeString("ja-JP", {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
