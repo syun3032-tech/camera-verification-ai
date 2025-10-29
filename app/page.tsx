@@ -5,28 +5,28 @@ import { useState, useRef, useEffect } from "react";
 interface Message {
   role: "user" | "assistant";
   content: string;
-  timestamp: string; // ISO文字列に変更してハイドレーションエラーを回避
+  timestamp: string;
 }
 
+// 初期メッセージを定数として定義（サーバーとクライアントで一致）
+const INITIAL_MESSAGE: Message = {
+  role: "assistant",
+  content: "こんにちは！議事録作成AIです。\n\n音声ファイルをアップロードしていただければ、自動で文字起こしと議事録の作成を行います。\n\nどのようなご用件でしょうか？",
+  timestamp: "2025-01-01T00:00:00.000Z", // 固定値でハイドレーションエラーを回避
+};
+
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // クライアント側でのみ初期メッセージを設定（Hydrationエラー回避）
+  // クライアント側のマウント確認
   useEffect(() => {
-    setMounted(true);
-    setMessages([
-      {
-        role: "assistant",
-        content: "こんにちは！議事録作成AIです。\n\n音声ファイルをアップロードしていただければ、自動で文字起こしと議事録の作成を行います。\n\nどのようなご用件でしょうか？",
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+    setIsClient(true);
   }, []);
 
   const scrollToBottom = () => {
@@ -34,39 +34,42 @@ export default function Home() {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // マウント前は何も表示しない（Hydrationエラー回避）
-  if (!mounted) {
-    return (
-      <main className="flex h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="w-64 bg-gray-900 text-white p-4 flex flex-col">
-          <div className="mb-8">
-            <h1 className="text-xl font-bold mb-2">🎤 議事録AI</h1>
-            <p className="text-xs text-gray-400">Powered by Claude</p>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-gray-500">読み込み中...</div>
-        </div>
-      </main>
-    );
-  }
+    if (isClient) {
+      scrollToBottom();
+    }
+  }, [messages, isClient]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+
+      // ファイルサイズチェック（4MB = 4 * 1024 * 1024 bytes）
+      const maxSize = 4 * 1024 * 1024; // 4MB
+      if (selectedFile.size > maxSize) {
+        const errorMessage: Message = {
+          role: "assistant",
+          content: `❌ ファイルサイズが大きすぎます。\n\nアップロードされたファイル: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB\n最大サイズ: 4MB\n\n4MB以下のファイルを選択してください。`,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
+
+        // ファイル選択をリセット
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+
       setFile(selectedFile);
-      
+
       // ファイルが選択されたらメッセージを追加
       const userMessage: Message = {
         role: "user",
-        content: `📎 音声ファイル: ${selectedFile.name}`,
+        content: `📎 音声ファイル: ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)}MB)`,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, userMessage]);
-      
+
       // 自動的に処理を開始
       processAudioFile(selectedFile);
     }
@@ -94,7 +97,11 @@ export default function Home() {
       });
 
       if (!transcribeRes.ok) {
-        throw new Error("文字起こしに失敗しました");
+        if (transcribeRes.status === 413) {
+          throw new Error("ファイルサイズが大きすぎます。4MB以下のファイルを選択してください。");
+        }
+        const errorData = await transcribeRes.json().catch(() => ({}));
+        throw new Error(errorData.error || "文字起こしに失敗しました");
       }
 
       const transcribeData = await transcribeRes.json();
@@ -237,18 +244,23 @@ export default function Home() {
                   <div className="whitespace-pre-wrap break-words">
                     {message.content}
                   </div>
-                  <div
-                    className={`text-xs mt-2 ${
-                      message.role === "user"
-                        ? "text-purple-200"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    {new Date(message.timestamp).toLocaleTimeString("ja-JP", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </div>
+                  {isClient && (
+                    <div
+                      className={`text-xs mt-2 ${
+                        message.role === "user"
+                          ? "text-purple-200"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {message.timestamp === "2025-01-01T00:00:00.000Z"
+                        ? ""
+                        : new Date(message.timestamp).toLocaleTimeString("ja-JP", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                      }
+                    </div>
+                  )}
                 </div>
                 {message.role === "user" && (
                   <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center flex-shrink-0">

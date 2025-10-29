@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transcribeAudio } from "@/lib/gemini";
-import { 
-  validateApiKey, 
-  unauthorizedResponse, 
+import {
+  validateApiKey,
+  unauthorizedResponse,
   addCorsHeaders,
-  handleCorsPreFlight 
+  handleCorsPreFlight
 } from "@/lib/api-auth";
 
-// ボディサイズ制限を設定（50MB）
-// Vercel環境ではvercel.jsonで maxBodySize: "50mb" を設定
+// Edge Runtimeではなく、Node.js Runtimeを使用して大きなファイルを処理
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
@@ -22,6 +21,19 @@ export async function POST(request: NextRequest) {
     // API認証チェック
     if (!validateApiKey(request)) {
       return addCorsHeaders(unauthorizedResponse());
+    }
+
+    // ContentLengthをチェック（Vercelの制限を超えている場合は事前にエラー）
+    const contentLength = request.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 4.5 * 1024 * 1024) {
+      const response = NextResponse.json(
+        {
+          error: "ファイルサイズが大きすぎます。4MB以下のファイルをアップロードしてください。",
+          details: "Vercelの無料プランでは4.5MBまでのファイルしかアップロードできません。"
+        },
+        { status: 413 }
+      );
+      return addCorsHeaders(response);
     }
 
     const formData = await request.formData();
