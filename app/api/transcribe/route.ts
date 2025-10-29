@@ -7,6 +7,10 @@ import {
   handleCorsPreFlight 
 } from "@/lib/api-auth";
 
+// ボディサイズ制限を設定（50MB）
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 // CORSプリフライトリクエスト対応
 export async function OPTIONS() {
   return handleCorsPreFlight();

@@ -7,6 +7,10 @@ import {
   handleCorsPreFlight 
 } from "@/lib/api-auth";
 
+// ランタイム設定
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 // CORSプリフライトリクエスト対応
 export async function OPTIONS() {
   return handleCorsPreFlight();
