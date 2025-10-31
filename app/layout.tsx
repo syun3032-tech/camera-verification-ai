@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "議事録作成AI",
-  description: "音声から自動で議事録を作成するAIアプリケーション",
+  title: "カメラ認証AI",
+  description: "カメラで書類を読み取り、CSVデータと自動照合するAIアプリケーション",
 };
 
 export default function RootLayout({
