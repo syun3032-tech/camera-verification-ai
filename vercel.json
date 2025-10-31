@@ -2,7 +2,7 @@
   "functions": {
     "app/api/transcribe/route.ts": {
       "maxDuration": 60,
-      "memory": 3008
+      "memory": 2048
     },
     "app/api/summarize/route.ts": {
       "maxDuration": 60
