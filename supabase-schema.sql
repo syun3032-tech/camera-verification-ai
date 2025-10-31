@@ -24,6 +24,26 @@ CREATE POLICY "Enable insert access for all users" ON meeting_minutes
 -- CREATE POLICY "Users can view their own meeting minutes" ON meeting_minutes
 --   FOR SELECT USING (auth.uid() = user_id);
 
+-- ストレージバケットの作成（音声ファイル用）
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('audio-files', 'audio-files', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- ストレージポリシー：全ユーザーがアップロード可能
+CREATE POLICY "Anyone can upload audio files"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'audio-files');
+
+-- ストレージポリシー：全ユーザーが読み取り可能
+CREATE POLICY "Anyone can read audio files"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'audio-files');
+
+-- ストレージポリシー：全ユーザーが削除可能（オプション）
+CREATE POLICY "Anyone can delete audio files"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'audio-files');
+
 
 
 
