@@ -1,5 +1,114 @@
 // Google AI Platform API を使用
 
+// 画像OCR処理（輸出抹消書類用）
+export async function processImageOCR(imageFile: File): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("Gemini APIキーが設定されていません");
+  }
+
+  try {
+    // ファイルをBase64に変換
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString("base64");
+
+    // MIMEタイプを取得
+    const mimeType = imageFile.type || "image/jpeg";
+
+    const prompt = `この輸出抹消登録証明書の画像から、車台番号を含む情報を抽出してください。
+
+【最重要】車台番号
+画像の右上にある「車台番号」欄の番号を正確に読み取ってください。
+例: AAZH20-1002549
+
+【抽出項目】
+1. **車台番号** （最優先・必須）
+2. 登録番号
+3. 車名
+4. 型式
+5. 原動機の型式
+6. 初度登録年月
+7. 所有者名
+8. 所有者住所
+9. 使用者名
+10. 使用者住所
+11. 交付年月日
+
+【出力形式】
+必ず以下の形式で出力してください：
+
+車台番号: AAZH20-1002549
+登録番号: 品川 500 あ 12-34
+車名: トヨタ
+型式: ○○○-ABC123
+原動機の型式: 2ZR-FE
+初度登録年月: 2020年1月
+所有者名: 株式会社○○
+所有者住所: 東京都○○区○○1-2-3
+使用者名: 株式会社○○
+使用者住所: 東京都○○区○○1-2-3
+交付年月日: 2024年10月1日
+
+【注意事項】
+- 車台番号は絶対に正確に読み取ってください
+- 車台番号が見つからない場合は「車台番号: 不明」と記載
+- 読み取れない項目は "不明" と記載してください
+- ハイフンや空白も正確に読み取ってください`;
+
+    // Google AI Platform REST API を呼び出し
+    const response = await fetch(
+      `https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64Image,
+                  },
+                },
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Gemini API Error:", errorData);
+      throw new Error(
+        `Gemini APIエラー: ${errorData.error?.message || "Unknown error"}`
+      );
+    }
+
+    const data = await response.json();
+
+    // レスポンスからテキストを抽出
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      throw new Error("OCR処理に失敗しました");
+    }
+
+    return text;
+  } catch (error) {
+    console.error("Gemini OCR error:", error);
+    throw error;
+  }
+}
+
 export async function transcribeAudio(audioFile: File): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   
