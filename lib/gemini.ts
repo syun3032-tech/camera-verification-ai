@@ -82,12 +82,24 @@ export async function processImageOCR(imageFile: File): Promise<string> {
             },
           ],
         }),
+        signal: AbortSignal.timeout(60000),  // 60秒タイムアウト
       }
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       console.error("Gemini API Error:", errorData);
+      
+      // 429エラー（レート制限）の特別処理
+      if (response.status === 429 || errorData.error?.message?.includes("Resource exhausted")) {
+        throw new Error(
+          `⚠️ Gemini APIのレート制限に達しました\n\n` +
+          `リクエストが多すぎるため、しばらく待ってから再試行してください。\n` +
+          `（通常は数分待つと再び利用可能になります）\n\n` +
+          `詳細: ${errorData.error?.message || "Resource exhausted"}`
+        );
+      }
+      
       throw new Error(
         `Gemini APIエラー: ${errorData.error?.message || "Unknown error"}`
       );
@@ -170,12 +182,24 @@ export async function transcribeAudio(audioFile: File): Promise<string> {
             },
           ],
         }),
+        signal: AbortSignal.timeout(60000),  // 60秒タイムアウト
       }
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       console.error("Gemini API Error:", errorData);
+      
+      // 429エラー（レート制限）の特別処理
+      if (response.status === 429 || errorData.error?.message?.includes("Resource exhausted")) {
+        throw new Error(
+          `⚠️ Gemini APIのレート制限に達しました\n\n` +
+          `リクエストが多すぎるため、しばらく待ってから再試行してください。\n` +
+          `（通常は数分待つと再び利用可能になります）\n\n` +
+          `詳細: ${errorData.error?.message || "Resource exhausted"}`
+        );
+      }
+      
       throw new Error(
         `Gemini APIエラー: ${errorData.error?.message || "Unknown error"}`
       );
@@ -274,12 +298,24 @@ export async function transcribeAndSummarize(
             },
           ],
         }),
+        signal: AbortSignal.timeout(60000),  // 60秒タイムアウト
       }
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       console.error("Gemini API Error:", errorData);
+      
+      // 429エラー（レート制限）の特別処理
+      if (response.status === 429 || errorData.error?.message?.includes("Resource exhausted")) {
+        throw new Error(
+          `⚠️ Gemini APIのレート制限に達しました\n\n` +
+          `リクエストが多すぎるため、しばらく待ってから再試行してください。\n` +
+          `（通常は数分待つと再び利用可能になります）\n\n` +
+          `詳細: ${errorData.error?.message || "Resource exhausted"}`
+        );
+      }
+      
       throw new Error(
         `Gemini APIエラー: ${errorData.error?.message || "Unknown error"}`
       );

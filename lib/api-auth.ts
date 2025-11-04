@@ -5,14 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
  * リクエストヘッダーの Authorization: Bearer <API_KEY> を検証
  */
 export function validateApiKey(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-  
-  if (!authHeader) {
-    return false;
-  }
-
-  const token = authHeader.replace("Bearer ", "");
-  
   // 環境変数からAPIキーを取得
   const validApiKeys = process.env.API_KEYS?.split(",") || [];
   
@@ -21,6 +13,14 @@ export function validateApiKey(request: NextRequest): boolean {
     console.warn("⚠️ API_KEYS が設定されていません。認証なしでアクセス可能です。");
     return true;
   }
+  
+  const authHeader = request.headers.get("authorization");
+  
+  if (!authHeader) {
+    return false;
+  }
+
+  const token = authHeader.replace("Bearer ", "");
   
   return validApiKeys.includes(token);
 }
